@@ -28,7 +28,7 @@ resource "aws_instance" "my_server_1" {
  user_data = <<-EOF
               #!/bin/bash
               echo "Hi! I'm the server number 1 Terraformer!" > index.html
-              nohup busybox httpd -f -p 8080 &
+              nohup busybox httpd -f -p ${var.server_port} &
               EOF
                    tags = {
     Name = "servidor-1"
@@ -45,7 +45,7 @@ resource "aws_instance" "my_server_2" {
   user_data = <<-EOF
               #!/bin/bash
               echo "Hi! I'm the server number 2 Terraformer!" > index.html
-              nohup busybox httpd -f -p 8080 &
+              nohup busybox httpd -f -p ${var.server_port} &
               EOF
                    tags = {
     Name = "servidor-2"
@@ -67,27 +67,27 @@ resource "aws_security_group" "alb" {
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Acceso al puerto 80 desde el exterior"
-    from_port   = 80
-    to_port     = 80
+    from_port   = var.lb_port
+    to_port     = var.lb_port
     protocol    = "TCP"
   }
   egress {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Acceso al puerto 8080 de nuestros servidores"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = var.server_port
+    to_port     = var.server_port
     protocol    = "TCP"
   }
 }
 resource "aws_lb_target_group" "this" {
   name = "terraformers-alb-target-group"
-  port = 80
+  port = var.lb_port
   vpc_id = data.aws_vpc.default.id
   protocol = "HTTP"
   health_check {
     enabled = true
     matcher = 200
-    port = "8080"
+    port = var.server_port
     protocol = "HTTP"
     path = "/"
 
@@ -102,8 +102,8 @@ resource "aws_security_group" "mi_grupo_de_seguridad" {
   ingress {
     security_groups = [aws_security_group.alb.id]
     description = "Acceso al puerto 8080 desde el exterior"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = var.server_port
+    to_port     = var.server_port
     protocol    = "TCP"
   }
 }
@@ -111,7 +111,7 @@ resource "aws_security_group" "mi_grupo_de_seguridad" {
 resource "aws_lb_target_group_attachment" "servidor1" {
   target_group_arn = aws_lb_target_group.this.arn
   target_id = aws_instance.my_server_1.id
-  port = 8080
+  port = var.server_port
   
 }
 
@@ -119,13 +119,13 @@ resource "aws_lb_target_group_attachment" "servidor1" {
 resource "aws_lb_target_group_attachment" "servidor2" {
   target_group_arn = aws_lb_target_group.this.arn
   target_id = aws_instance.my_server_2.id
-  port = 8080
+  port = var.server_port
   
 }
 
 resource "aws_lb_listener" "this" {
   load_balancer_arn = aws_lb.alb.arn
-  port =80
+  port = var.lb_port
   protocol = "HTTP"
   default_action {
     target_group_arn = aws_lb_target_group.this.arn

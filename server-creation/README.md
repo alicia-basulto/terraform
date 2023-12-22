@@ -48,3 +48,50 @@ Listener on the ALB to forward incoming requests on port 80 to the target group
 In short, it is about deploying a simple web server farm behind a load balancer, demonstrating the basic concepts of Terraform and AWS such as resources, data sources, security groups, load balancing and showing a possible infrastructure covering high availability.
 
 <image src="firstServer.png" alt="Application schema" >
+
+# Variables
+Definition schema in `variables.tf` file.
+
+`variable "nombre_variable" {
+  type        = string (string, bool, number or any)
+  description = "Descripción de la variable"
+  default     = "valor_predeterminado"
+  validation = {
+	condition = var.server_port > 0 && var.server_port < 65536
+	errpor_message ="error message"
+  }
+}
+`
+
+There are different ways of instantiating variable values:
+
+1. Do not indicate anything, and when performing the `terraform apply` we will be asked for the value by console.
+   
+2. Indicate `-var` flag with the value. `terraform apply -var="var_name=value"`
+   
+3. Indicate `-var-file` flag with the file name. `terraform apply -var-file="variables.tfvars"`
+
+4. Environmental variables. `TF_VAR_name=value. terraform apply`
+   
+5. `.tfvars` file. In this method we set the value inside this file.
+   
+6. `terraform.tfvars.json` file. In this method we set the value inside this file in JSON format.
+7. Default value with the `default` attribute in the `variables.tf` file.
+
+(`.auto.tfvars` files are automatically loaded by Terraform, while `.tfvars` files need to be explicitly specified using the `-var-file` option. Both types of files are used to define variable values in Terraform, but the main difference lies in how they are loaded and used during the execution of Terraform commands.)
+
+**Hierarchy of Precedence**:
+
+1. Command line arguments `var/var-file`
+2. Files ending in `.auto.tfvars` or `.auto.tfvars.json`.
+3. Files ending in `.tfvars` or `.tfvars.json`.
+4. Environment variables.
+
+
+# Loops
+`count` and `for_each`(only `map` and `set`)
+- `count`: To create multiple instances of the same resource. Using `length` and `count.index` we can iterate over the list.
+- `for_each`: To create multiple instances of the same resource and iterate over `map` or `set`. We can use `each.key` or `each.value` to iterate over the map.
+
+### Recommendations
+If the resources are identical use `count`, if they are different use `for_each`.
